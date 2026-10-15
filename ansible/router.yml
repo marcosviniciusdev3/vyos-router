@@ -1,0 +1,25 @@
+---
+- name: Configure VyOS router
+  hosts: routers
+  gather_facts: false
+
+  vars:
+    wan_if: eth3  # Replace with your actual WAN interface
+
+  tasks:
+    - name: Configure private LAN, DHCP and NAT
+      vyos.vyos.vyos_config:
+        backup: true
+        lines:
+          # Source NAT
+          - "set nat source rule 100 translation address 'masquerade'"
+          - "set nat source rule 100 outbound-interface name '{{ wan_if }}'"
+          - "set nat source rule 100 source address '192.168.50.0/24'"
+
+          # DHCP server
+          - "set service dhcp-server shared-network-name 'privatenet' authoritative"
+          - "set service dhcp-server shared-network-name 'privatenet' subnet '192.168.50.0/24' subnet-id '1'"
+          - "set service dhcp-server shared-network-name 'privatenet' subnet '192.168.50.0/24' option default-router '192.168.50.1'"
+          - "set service dhcp-server shared-network-name 'privatenet' subnet '192.168.50.0/24' range 0 start '192.168.50.100'"
+          - "set service dhcp-server shared-network-name 'privatenet' subnet '192.168.50.0/24' range 0 stop '192.168.50.250'"
+          - "set service dhcp-server shared-network-name 'privatenet' subnet '192.168.50.0/24' option name-server '9.9.9.9'"
