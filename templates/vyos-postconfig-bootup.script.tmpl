@@ -2,38 +2,19 @@
 
 source /opt/vyatta/etc/functions/script-template
 
-SSH_AUTHORIZED_KEY="{{ .SSHAuthorizedKey }}"
 WAN_MAC="{{ .WanMac }}"
 LAN_MAC="{{ .LanMac }}"
-
-# echo "$SSH_AUTHORIZED_KEY" | tee /config/authorized_hosts
-
-find_interface_by_mac() {
-    local target_mac="${1,,}"
-    local iface mac
-
-    for path in /sys/class/net/*; do
-        iface="${path##*/}"
-        mac="$(cat "$path/address")"
-
-        if [[ "${mac,,}" == "$target_mac" ]]; then
-            echo "$iface"
-            return 0
-        fi
-    done
-
-    return 1
-}
-
-WAN_IF="$(find_interface_by_mac "$WAN_MAC")" || exit 1
-LAN_IF="$(find_interface_by_mac "$LAN_MAC")" || exit 1
+WAN_IF="eth0"
+LAN_IF="eth1"
 
 configure
+delete interfaces ethernet
 
-set system host-name 'vyos-router'
+set interfaces ethernet "$WAN_IF" hw-id "$WAN_MAC"
 set interfaces ethernet "$WAN_IF" address dhcp
+
+set interfaces ethernet "LAN_IF" hw-id "$LAN_MAC"
 set interfaces ethernet "$LAN_IF" address '192.168.50.1/24'
-set nat source rule 100 outbound-interface name "$WAN_IF"
 
 commit
 save
